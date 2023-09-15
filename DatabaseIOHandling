@@ -1,0 +1,72 @@
+package ie.atu.sw;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
+public class DatabaseIOHandling {
+
+	// Method to simply print out the contents of the chosen input file to encrypt
+	public static File printTxtFiles(String input) throws IOException {
+		File directoryPath = new File(input);
+
+		// loop to List of all files and directories
+		if (input == null) {
+			System.out.println("Error: File not found");
+		}
+		String contents[] = directoryPath.list();
+		System.out.println("Below is a list of the .txt files in the directory you have chosen: ");
+		for (int i = 0; i < contents.length; i++) {
+			System.out.println(contents[i]);
+
+			// gets the users full file path/directoryName/Files.txt
+			Parser.parse(System.getProperty("user.dir") + "/" + input + "/" + contents[i]);
+		}
+		return directoryPath;
+
+	}
+
+	// Writes the already encrypted and decrypted text to a file
+	public static void writeToFile(String getParsedFiles, String writeToFileName) throws Exception {
+		try {
+			FileWriter fw = new FileWriter(new File(writeToFileName));
+
+			fw.write(getParsedFiles);
+			fw.flush();
+			fw.close();
+		} catch (IOException e) {
+			throw new Exception("[Error] Cannot load data from " + writeToFileName + ". " + e.getMessage());
+		}
+	}
+
+	/*
+	 * Method should be able to save the contents of a file (toSave) to another file
+	 * (fileName) and then be able to load it up through the load method. Wasn't
+	 * able to figure it out on time. Instead only saves the text file name into the
+	 * other; overwriting its contents
+	 */
+	public static void save(String toSave, String fileName) throws Exception {
+		try {
+			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(new File(fileName)));
+			;
+			out.writeObject(toSave);
+			out.close();
+		} catch (IOException e) {
+			throw new Exception("[Error] Cannot save the " + toSave + " to " + fileName + ". " + e.getMessage());
+		}
+	}
+
+	// loads an already saved file of the users choosing
+	public static void load(String fileName) throws Exception {
+		try {
+			ObjectInputStream in = new ObjectInputStream(new FileInputStream(new File(fileName)));
+			in.close();
+		} catch (IOException e) {
+			throw new Exception("[Error] Cannot load data from " + fileName + ". " + e.getMessage());
+		}
+	}
+}
