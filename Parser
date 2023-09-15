@@ -1,0 +1,81 @@
+package ie.atu.sw;
+
+import java.io.BufferedReader;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+public class Parser {
+
+	// Retrieves text files from the chosen user input in Menu
+	// Then passes retrieved filenames to the parse method
+	public static String getTxtFiles(String input) throws IOException {
+
+		// New instance of StringBuilder to store the full file path names
+		StringBuilder processed_Txt_file = new StringBuilder();
+
+		// try catch block to test for errors
+		try {
+			File directory = new File(input);
+
+			// Checks if the directory exists or if it is empty, if so, a message will be
+			// deployed to user, or else it will continue
+			if (!directory.exists()) {
+				System.out.println("Directory does not exist. Please try again");
+			} else if (directory.length() == 0) {
+				System.out.println("Directory does not contain any files.");
+			} else {
+
+				// String array stores the list of file contents in fileNames
+				String[] fileNames = directory.list();
+
+				// Iterate through all files in the directory and prints them out
+				if (fileNames != null) {
+					for (int i = 0; i < fileNames.length; i++) {
+						System.out.println(fileNames[i]);
+
+						// calls the parse method and concatenates the directory path as a parameter i.e
+						// ./TextFiles/PoblachtNaHEireannPearse.txt etc.
+						StringBuilder pocessedTxt = parse(
+								System.getProperty("user.dir") + "/" + input + "/" + fileNames[i]);
+						// Appends the retrieved file names to the empty StringBuilder initialised above
+						processed_Txt_file.append(pocessedTxt);
+					}
+				}
+			}
+		} catch (Exception e) {
+			System.out.println("[Error] Cannot load the data from " + input + e.getMessage());
+			e.printStackTrace();
+		}
+		return processed_Txt_file.toString();
+	}
+
+	public static StringBuilder parse(String fileName) throws IOException {
+		// New object of String builder used for mutability
+		StringBuilder sb = new StringBuilder();
+
+		// try statement with resources and passes in the full pathnames from above
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(new File(fileName))))) {
+			String line = null;
+
+			// Read source line by line only if line is not empty
+			while ((line = br.readLine()) != null) {
+
+				/*
+				 * Each line of the text will be stripped of white space, // non-alphanumeric
+				 * characters will be replaced with ">>" to add spaces back // later // and
+				 * everything will be converted to uppercase. line =
+				 * line.trim().replaceAll("[^a-zA-Z0-9]", ">>").toUpperCase();
+				 */
+
+				sb.append(line).toString();// append these lines to StringBuilder object
+			}
+		} catch (Exception e) {
+			System.out.println("[Error] Cannot load the data from " + fileName + e.getMessage());
+			e.printStackTrace();
+		}
+		return sb;
+	}
+}
