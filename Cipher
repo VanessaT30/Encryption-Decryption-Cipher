@@ -1,0 +1,515 @@
+package ie.atu.sw;
+
+import java.util.LinkedHashSet;
+import java.util.Scanner;
+import java.util.Set;
+
+public class Cipher {
+	// Instance variables:
+	public static final int MIN_KEY_SIZE = 2;
+	public static final int MAX_KEY_SIZE = 36;
+
+	/*
+	 * Encryption: 1. Essentially retrieves the 2 characters from the ADFGVX
+	 * Polybius Square cipher first from the left y axis and then the top x axis of
+	 * the matrix. 2. These values are then inputed into a new matrix with the key
+	 * in the top row[0] 3. Columnar transposition is then performed and reorganised
+	 * according in alphabetical order 4. This matrix is printed out into a string
+	 */
+
+	// This is the encryption method called from Menu and is responsible
+	// for passing in all the variables to the next method
+	String encryptFile(String input, String key) throws Exception {
+
+		String processedKey = key;
+		// Fetches parsed texts and plugs into method 1 parameter etc
+		String processedText = getParsedTxts(input);
+
+		String encipheredC = getEncipheredChars(processedKey, processedText);
+		char[][] newMatrix = createNewMatrix(key, encipheredC);
+		char[] sortedKey = bubbleSortKey(key);
+		char[][] sortedMatrix = columnarTranspositionEnc(newMatrix, sortedKey);
+		String finalEcryptionl = Cipher.printArrayEnc(sortedMatrix);
+		return finalEcryptionl;
+	}
+
+	public String getParsedTxts(String inputDirName) throws Exception {
+		// Retrieves files in directory calls the parse method in Parser class:
+		String parsedContent = Parser.getTxtFiles(inputDirName);
+		return parsedContent;
+	}
+
+	// gets keyword from user: is called from the Menu class
+	public String getKey() throws Exception {
+		Scanner s = new Scanner(System.in);
+		System.out.print("Please enter a keyword : ");
+
+		/*
+		 * Processes the given key (similar to parsed texts; cuts all spaces & converts
+		 * text to upper case and changes them to a char[]
+		 */
+		char[] key = s.nextLine().trim().toUpperCase().toCharArray();
+
+		// Calls methods to remove duplicate letters and to validate the length of key
+		String processedKey = removeDuplicates(key);
+		validateKey(processedKey);
+		System.out.println("Duplicate letters have been removed from your chosen key: " + processedKey);
+		return processedKey;
+	}
+
+	/*
+	 * Gets rid of duplicate characters Asset Stripped from stackoverflow forum:
+	 * https:stackoverflow.com/a/4989150
+	 */
+	public String removeDuplicates(char[] key1) {
+
+		// key1 parameter assigned to new char[] called chars
+		char[] chars = key1;
+
+		// a new LinkedHashSet is declared and used to store and keep the order of chars
+		// in key1
+		Set<Character> charSet = new LinkedHashSet<>();
+
+		// foreach loop to iterate over each character
+		// new char variable c to store the iterated key1
+		for (char c : chars) {
+			// the characters iterated over will be added to charSet
+			// which automatically removes duplicates (not allowed in a set)
+			charSet.add(c);
+		}
+		// StringBuilder will efficiently make and store each iterated character in the
+		// iterated charSet
+		StringBuilder sb = new StringBuilder();
+
+		// another enhanced for loop going over the key (in charSet)
+		// and appends this to StringBuilder
+		for (Character character : charSet) {
+			sb.append(character);
+		}
+		return sb.toString();// converts to a string
+	}
+
+	// validates if the key is the right size
+	// minimum and maximum values are set above in instance variables (2-36)
+	private void validateKey(String key) throws Exception {
+
+		if (key == null) {
+			throw new Exception("ADFGVX Cypher error: key cannot be null");
+		} else if (key.length() < MIN_KEY_SIZE || key.length() > MAX_KEY_SIZE) {
+			throw new Exception("ADFGVX Cypher error: key size must be between " + MIN_KEY_SIZE + " and " + MAX_KEY_SIZE
+					+ " characters.");
+		}
+	}
+
+	// First Encryption Method: retrieves 2 cipher characters for each plain char
+	// Gets row and column characters on plainText
+	public String getEncipheredChars(String getkey, String plain) {
+
+		// will store the 2 enciphered characters
+		StringBuilder encipheredCharsSB = new StringBuilder();
+
+		// loop through the plain text
+		for (int i = 0; i < plain.length(); i++) {
+
+			// loop through rows starting on the 2nd row index[1]
+			// of the polybius square
+			for (int row = 1; row < POLYBIUS_SQUARE.length; row++) {
+
+				// loop through columns starting on the 2nd column index[1]
+				// of the square
+				for (int col = 1; col < POLYBIUS_SQUARE[row].length; col++) {
+
+					// if there's a match between the plain text and the Polybius square chars
+					if (POLYBIUS_SQUARE[row][col] == plain.charAt(i)) {
+
+						/*
+						 * first append to sb the char found at whichever row, first column[0] and vice
+						 * versa the char found in the square which matches the plain-text at whichever
+						 * column, first row[0]
+						 */
+						encipheredCharsSB.append(POLYBIUS_SQUARE[row][0]).append(POLYBIUS_SQUARE[0][col]);
+
+					}
+				}
+			}
+		}
+		// New string to convert store the newly made SB to a string
+		String encipheredChars = encipheredCharsSB.toString();
+		return encipheredChars;
+	}
+
+	/*
+	 * Method Encryption 2: Creates new symmetrical grid with key in first row and
+	 * the new enciphered characters underneath.
+	 */
+	public char[][] createNewMatrix(String key, String encipheredChars) {
+		/*
+		 * Determine how many rows needed Any left over characters received when the key
+		 * and enciphered characters are divided will be considered extra characters
+		 */
+		int clip = (encipheredChars.length() % key.length());
+
+		// Extra characters will be removed from the full enciphered text and that will
+		// determine the number of rows
+		String encipheredCharsClipped = encipheredChars.substring(0, encipheredChars.length() - clip);
+		int rowNumbers = encipheredCharsClipped.length() / key.length();
+
+		// conditions for setting up row numbers
+		if (clip == 0) {// if there are no extra characters then
+			rowNumbers = (encipheredCharsClipped.length() / key.length()) + 1;// + 1 to add another row for the key to
+																				// fit
+		} else if (clip != 0) {// If there are extra characters then
+			rowNumbers = 2 + (encipheredCharsClipped.length() / key.length());// add 2 rows for the key & extra chars
+		}
+
+		// declaring and filling matrix the new matrix
+		char[][] matrix = new char[rowNumbers][key.length()];
+		System.out.println();
+
+		/*
+		 * First loop for filling in key row asset stripped from stack:
+		 * https://stackoverflow.com/questions/20748280/fill-specific-row-in-a-2d-array-
+		 * java
+		 */
+		for (int col = 0; col < key.length(); col++) {
+			matrix[0][col] = key.charAt(col);
+		}
+
+		// filling in the rest of matrix with enciphered text
+		// iterates through starting at the 2nd row
+		for (int row = 1; row <= rowNumbers; row++) {
+			for (int col = 0; col < key.length(); col++) {// iterates through the columns at size key
+
+				/*
+				 * Used formula in this video for help to find the index of a string array:
+				 * https://www.youtube.com/watch?v=dJ2kPBNhCK4&ab_channel=Education4u new
+				 * variable initialised calculating the index: (row - 1) ensures text starts at
+				 * the first (0) index on the second row, along the length of the key (columns)
+				 * & "col" is the current iteration
+				 */
+				int index = (row - 1) * key.length() + col;
+				if (index < encipheredChars.length()) {
+					// encipheredChars at index will be assigned to the entire matrix
+					matrix[row][col] = encipheredChars.charAt(index);
+				}
+			}
+		}
+		// Prints out the new matrix
+		System.out.println();
+		System.out.println("The original encryption matrix is: "); //
+		for (int row = 0; row < matrix.length; row++) {
+			for (int col = 0; col < matrix[row].length; col++) {
+				System.out.print(matrix[row][col] + " "); //
+			}
+			System.out.println();
+		}
+		return matrix;
+	}
+
+	/*
+	 * performs bubble sort to alphabetically order the key Asset stripped from:
+	 * https://www.geeksforgeeks.org/row-wise-sorting-2d-array/
+	 */
+	public char[] bubbleSortKey(String strKey) {
+		char temp;
+
+		// Converting the key of type string into a char[]
+		char[] key = new char[strKey.length()];
+		// loops over key of type string and assigns each char to a char array (key[])
+		for (int i = 0; i < strKey.length(); i++) {
+			key[i] = strKey.charAt(i);
+		}
+		System.out.println();
+
+		// outer loop iterates over the key column in the matrix
+		for (int i = 0; i < key.length - 1; i++) {
+
+			// comparing if current value is less than the value after the current one
+			for (int j = 0; j < (key.length - i - 1); j++) {
+				if (key[j] > key[j + 1]) {
+
+					// if j value is less, then swap elements
+					temp = key[j];
+					key[j] = key[j + 1];
+					key[j + 1] = temp;
+
+				}
+			}
+		}
+//		System.out.println("The new matrix starts with the sorted key: "); 
+		return key;
+
+	}
+
+	/*
+	 * Method Encryption 3: This method is responsible for the columnar
+	 * transposition of the matrix going in alphabetical order. This method uses a
+	 * mixture of 2 methods: bubble sort similar to key sorting above and inputting
+	 * values into a new matrix according to the already sorted key order Asset
+	 * Stripped from: https://favtutor.com/blogs/bubble-sort-java and Andres Penas
+	 * Palmeiro, 2019 on GitHub
+	 */
+	public char[][] columnarTranspositionEnc(char[][] matrix, char[] sortedKey) {
+
+		// init var for column index
+		int[] colIndex = new int[sortedKey.length];
+
+		// outer loop iterates over the sorted key (decides the order to be swapped)
+		for (int i = 0; i < sortedKey.length; i++) {
+
+			// Retrieving the order the columns will be moved
+			for (int j = 0; j < matrix[0].length; j++) {// iterates over the first row of the matrix (original key)
+				if (sortedKey[i] == matrix[0][j]) {// and compares sorted and original key = if so, then
+
+					// the current char at j column (original key that matches the sorted key)is
+					// assigned to the current char at
+					// i (sorted key line)
+					colIndex[i] = j;// colIndex (sorted key) is assigned j (original key)
+									// thus, the new order of the column index is retrieved
+									// e.g. columnIndex[0] = 2; columnIndex[0] = 1; columnIndex[0] = 3; thus, 213 is
+									// the order of index cols and should be swapped
+					break;// when current char is found
+				}
+			}
+		}
+
+		// calls the swap method with above (sorted) matrix and colindex; initialises it
+		// sortedMatrix
+		char[][] sortedMatrix = swap(matrix, colIndex);
+
+		// Printing out the new matrix
+		System.out.println();
+		System.out.println("The alphabetically sorted matrix using columnar transposition is: ");
+		for (int row = 0; row < sortedMatrix.length; row++) {
+			for (int col = 0; col < sortedMatrix[row].length; col++) {
+				System.out.print(sortedMatrix[row][col] + " ");
+			}
+			System.out.println();
+		}
+		return sortedMatrix;
+	}
+
+	// Encryption: method to swap columns based on sorted key index
+	private static char[][] swap(char[][] matrix, int[] columnIndex) {
+
+		// new matrix with the same dimensions as organised columns
+		char[][] sortedMatrix = new char[matrix.length][matrix[0].length];
+
+		for (int i = 0; i < matrix.length; i++) { // iterates through each row
+			for (int j = 0; j < matrix[0].length; j++) { // iterates through each column
+
+				/*
+				 * Swap columns based on columnIndex // each space in the new matrix will be
+				 * assigned values from the old matrix at // row [i] and values at index [j] //
+				 * thus, row will be the same but column values will be indicated by colindex[j]
+				 * for each row
+				 */
+				sortedMatrix[i][j] = matrix[i][columnIndex[j]];
+			}
+		}
+		return sortedMatrix;
+	}
+
+	// Encryption Method 4:
+	// Prints out the sorted and encrypted matrix
+	static String printArrayEnc(char[][] sortedMatrix) {
+		// New StringBuilder to store final encrypted string
+		StringBuilder sb = new StringBuilder();
+
+		// looped over rows and columns again
+		for (int row = 0; row < sortedMatrix.length; row++) {
+			for (int col = 0; col < sortedMatrix[row].length; col++) {
+
+				// append looped content from 2D array
+				sb.append(sortedMatrix[row][col]);
+				// once looped through the column from start to finish then add a space
+//						   if (col < sortedMatrix[row].length - 1) {
+//							   sb.append(" ");
+			}
+		}
+		sb.toString();
+		System.out.println();
+		System.out.println("The Encrypted text is printed into your chosen output file");
+		return sb.toString();
+	}
+
+	/*
+	 * Decryption: It is essentially the same as the encryption above, however,
+	 * reversed 1.The String printed out from encryption methods is taken and put
+	 * into a new matrix - this string also includes the already sorted key
+	 * 2.Columnar transposition occurs at this stage but is organised according to
+	 * the indexes of the original key word 3.When put back in original order, the
+	 * pair of characters are matched with the alphanumeric characters from the
+	 * Polybius Square 4.These decrypted values are then printed out into a string
+	 * into the output file
+	 */
+
+	// method called from Menu and passes in results from methods into each
+	// paramater of the next method
+	String decryptFile(String finalEcryption, String key) throws Exception {
+
+		char[][] decryptingMatrix = createDecryptMatrix(finalEcryption, key);
+		char[][] decryptbubbleSort = columnarTranspositionDec(decryptingMatrix, key);
+		String DecryptedChars = printArrayDec(decryptbubbleSort);
+		String final_Decryption = getOriginalChars(key, DecryptedChars);
+		return final_Decryption;
+	}
+
+	// Method 1.
+	// similar to encryption, it creates a new matrix only using the encrypted text
+	public char[][] createDecryptMatrix(String encryptedText, String key) {
+
+		// Determines amount of rows needed
+		int clip = (encryptedText.length() % key.length());
+		String encipheredCharsClipped = encryptedText.substring(0, encryptedText.length() - clip);
+
+		// rows so far do not account for extra characters or the key
+		int rowNumbersDecrypt = encipheredCharsClipped.length() / key.length();
+
+		// conditions for setting up row numbers
+		if (clip != 0) {//
+			// If there are extra characters then add 1 row for them as the already
+			// sorted key row is already in the first row of the matrix
+			rowNumbersDecrypt = 1 + (encipheredCharsClipped.length() / key.length());
+		}
+
+		char[][] decryptMatrixl = new char[rowNumbersDecrypt][key.length()];// new matrix for decrypting
+
+		System.out.println();
+
+		// filling in the matrix, very similar to the encryption method
+		for (int row = 0; row <= rowNumbersDecrypt; row++) {// iterates through rows starting in the first row this time
+			for (int col = 0; col < key.length(); col++) { // iterates through the key column length
+
+				// variable calculating the index: (row) ensures text starts at the
+				// first (0) index on the first row
+				// formula from the source confuses me a little but it works
+				int index = (row) * key.length() + col;
+				if (index < encryptedText.length()) {
+					decryptMatrixl[row][col] = encryptedText.charAt(index);
+				}
+			}
+		}
+		// Prints out the new matrix
+		System.out.println();
+		System.out.println("The decrypt matrix: contains alphabetically sorted values: ");
+		for (int row = 0; row < decryptMatrixl.length; row++) {
+			for (int col = 0; col < decryptMatrixl[row].length; col++) {
+				System.out.print(decryptMatrixl[row][col] + " ");
+			}
+			System.out.println();
+		}
+		return decryptMatrixl;
+	}
+
+	// Method 2.
+	// sort matrix in order of the original key
+	public char[][] columnarTranspositionDec(char[][] decryptMatrix, String processedKey) {
+
+		char[] originalKey = processedKey.toCharArray();// convert string key to char array
+
+		// initialised variable to get the column index
+		int[] colIndex = new int[originalKey.length];
+
+		// outer loop iterates over the original key as it decides the order of
+		// transposition
+		for (int i = 0; i < originalKey.length; i++) {
+
+			for (int j = 0; j < decryptMatrix[0].length; j++) {// iterates over the first row of the matrix (sorted key)
+				if (originalKey[i] == decryptMatrix[0][j]) {// compares sorted and original key
+
+					// the current char at j column (sorted key)is assigned to the current char at i
+					// (original key)
+					colIndex[i] = j;// the order of transposition are stored in columnIndex
+					break;
+				}
+			}
+		}
+		// calls the swap method and initialises it originalMatrix
+		char[][] originalMatrix = swapDecryption(decryptMatrix, colIndex);
+
+		// Printing out the new original matrix
+		System.out.println();
+		System.out.println("The original matrix (Unsorted): ");
+		for (int row = 0; row < originalMatrix.length; row++) {
+			for (int col = 0; col < originalMatrix[row].length; col++) {
+				System.out.print(originalMatrix[row][col] + " ");
+			}
+			System.out.println();
+		}
+		return originalMatrix;
+	}
+
+	// method to swap columns based on original key index
+	private static char[][] swapDecryption(char[][] sortedMatrix, int[] columnIndex) {
+		// new matrix to store original columns & row numbers
+		char[][] originalMatrix = new char[sortedMatrix.length][sortedMatrix[0].length];
+
+		for (int i = 0; i < sortedMatrix.length; i++) { // iterates through each row and column
+			for (int j = 0; j < sortedMatrix[0].length; j++) {
+
+				// previously explained in the encryption method of swap
+				originalMatrix[i][j] = sortedMatrix[i][columnIndex[j]];
+			}
+		}
+		return originalMatrix;
+	}
+
+	// Prints out the decrypted text
+	static String printArrayDec(char[][] originalMatrix) {
+		// New StringBuilder to store final encrypted string
+		StringBuilder sb = new StringBuilder();
+
+		// looped over rows and columns again; ignoring the 1st row containing key
+		for (int row = 1; row < originalMatrix.length; row++) {
+			for (int col = 0; col < originalMatrix[row].length; col++) {
+
+				// append looped content from 2D array
+				sb.append(originalMatrix[row][col]);
+			}
+		}
+		String encipheredCD = sb.toString();
+		System.out.println();
+		return encipheredCD;
+	}
+
+	// Method 4.
+	// Get original characters from the polybius square
+	public String getOriginalChars(String processedKey, String encipheredText) {
+
+		// will store the original characters
+		StringBuilder originalCharsSB = new StringBuilder();
+
+		// loop through the plain text
+		for (int i = 0; i < encipheredText.length(); i++) {
+			// variable for the 2nd char to be enciphered, i + 1
+			int secondChar = i++;
+
+			for (int row = 0; row < POLYBIUS_SQUARE.length; row++) {// loop through rows of the square
+				for (int col = 0; col < POLYBIUS_SQUARE[row].length; col++) {// loop through columns
+
+					// if theres a match between the pair of chars and the polybius square
+					if (POLYBIUS_SQUARE[0][col] == encipheredText.charAt(i)
+							&& (POLYBIUS_SQUARE[row][0] == encipheredText.charAt(secondChar))) {
+						originalCharsSB.append(POLYBIUS_SQUARE[row][col]);
+					}
+				}
+			}
+		}
+		String originalChars = originalCharsSB.toString();
+
+		System.out.println("The full Decrypted text is printed into your output file ");
+		System.out.println();
+		return originalChars;
+	}
+
+		private static final char[][] TABLE = {
+				{' ','A','D','F','G','V','X'},
+				{'A','P','H','0','Q','G','6'},
+				{'D','4','M','E','A','1','Y'},
+				{'F','L','2','N','O','F','D'},
+				{'G','X','K','R','3','C','V'},
+				{'V','S','5','Z','W','7','B'},
+				{'X','J','9','U','T','I','8'}
+		};
+	}	
