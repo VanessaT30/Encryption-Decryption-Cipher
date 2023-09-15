@@ -1,0 +1,261 @@
+package ie.atu.sw;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Scanner;
+
+public class Menu {
+	// Instance variables
+	private Scanner s = null;
+	private boolean keepRunning = true;
+	private String input = null;
+	private String key = null;
+	private String output = null;
+	private String outputDecryption = null;
+	private String finalEcryption = null;
+	private String finalDecryption = null;
+
+	// *Constructor*
+	public Menu() {
+		s = new Scanner(System.in);
+	}
+
+	// takes in user input and processes it
+	// Extended switch statement to switch on users choices
+	public void start() throws Exception {
+		while (keepRunning) {
+			menuDisplay();
+
+			int choice = Integer.parseInt(s.next()); // converts scanner return to an int
+			switch (choice) {
+			case 1 -> inputFile();
+			case 2 -> outputFile();
+			case 3 -> setKey();
+			case 4 -> encrypt();
+			case 5 -> decrypt();
+			case 6 -> save();
+			case 7 -> load();
+			case 8 -> System.exit(0);
+			default -> System.out.println("Error: Invalid Selection.");
+			}
+		}
+		System.out.println("[INFO] Exiting Application!");
+	}
+
+	// Method to obtain and save the file directory chosen by the user
+	private void inputFile() throws IOException {
+		System.out.println("[1] You Have Chosen Input File Directory ");
+		System.out.println("Please specify the name of a file directory you would like to Encrypt/Decrypt");
+
+		Scanner s = new Scanner(System.in); // blocking taking in user input
+		String inputDirName = s.nextLine(); // Stores user input into inputFileName
+		System.out.println("You have chosen: " + inputDirName + ".");
+		System.out.println();
+
+		// Check to see if file directory chosen is valid, if so, continue
+		File directory = new File(inputDirName);
+		if (!directory.exists()) {
+			System.out.println("Directory does not exist. Please try again");
+		} else if (directory.length() == 0) {
+			System.out.println("Directory does not contain any files.");
+		} else {
+		}
+
+		// Assigns user input retrieved to the instance variable input
+		this.input = inputDirName;
+
+		// Method called to print out the file names in the directory
+		DatabaseIOHandling.printTxtFiles(input);
+	}
+
+	// Method to only get the name the user desires their output file to be called
+	private void outputFile() throws Exception {
+		System.out.println("[INFO] You Have Chosen Output File Name: ");
+		System.out.println("Please specify the name of a file directory you would like the encryption to output to");
+
+		Scanner s = new Scanner(System.in); // blocking taking in output name
+		String outputDirName = s.nextLine(); // Stores user input into outputDirName
+		System.out.println();
+
+		this.output = outputDirName; // assigns the name of the file to the instance variable output
+		System.out.println("You have chosen: " + output + ".txt" + " as the name of your encryption output file");
+
+		System.out.println("Please specify the name of a file directory you would like the decryption to output to");
+		Scanner s1 = new Scanner(System.in); // blocking taking in output name
+		String outputDirNameDecryption = s1.nextLine(); // Stores user input into outputDirName
+		System.out.println();
+
+		this.outputDecryption = outputDirNameDecryption; // assigns the name of the file to the instance variable output
+		System.out.println(
+				"You have chosen: " + outputDecryption + ".txt" + " as the name of your decryption output file");
+	}
+
+	// Method which calls the getKey method from the cipher class and assigns it to
+	// the instance variable key in this class
+	private void setKey() throws Exception {
+		System.out.println("[INFO] You Have Chosen to set a Keyword: ");
+
+		Cipher cipher = new Cipher();
+		String keyl = cipher.getKey();
+		this.key = keyl;
+		System.out.println("The key you've chosen is: " + key);
+	}
+
+	/*
+	 * Method to call the encrypt method from cipher class and assigns the fully
+	 * encrypted text to the finalEcryption variable in order to plug it into the
+	 * decrypt method below
+	 */
+	private void encrypt() throws Exception {
+		System.out.println("[INFO] You Have Chosen to Encrypt: ");
+		System.out.println("Files in: " + input + " will be encrypted using the keyword: " + key);
+
+		// conditions to test if other values have been set yet,
+		// if not those methods will be called
+		if (input == null) {
+			System.out.println("invalid: input not set, please try again");
+			inputFile();
+
+		} else if (output == null) {
+			System.out.println("invalid: output not set, please try again");
+			outputFile();
+
+		} else if (key == null) {
+			System.out.println("invalid: key not set, please try again");
+			setKey();
+
+		} else {
+
+			Cipher cipher = new Cipher();
+			String finalEcryptionl = cipher.encryptFile(input, key);
+
+			this.finalEcryption = finalEcryptionl;
+			System.out.println(finalEcryption);
+
+			// The DatabaseIOHandling class is called to print the text from this method to
+			// a file
+			DatabaseIOHandling.writeToFile(finalEcryption, output);
+		}
+	}
+
+	/*
+	 * Method to call the decrypt method from the cipher class similar to the
+	 * encrypt method assigns it to the finalDecryption instance variable, has
+	 * conditions and also include the calling of the encrypt method as it is needed
+	 * in order to call this method output class also called in order to print out
+	 * the text to a file of the same name, unless option 2 is chosen and set again
+	 */
+	private void decrypt() throws Exception {
+		System.out.println("[INFO] You Have Chosen to Decrypt: ");
+
+		// conditions if other values have not been set yet
+		if (input == null) {
+			System.out.println("invalid: input not set, please try again");
+			inputFile();
+
+		} else if (output == null) {
+			System.out.println("invalid: output not set, please try again");
+			outputFile();
+
+		} else if (key == null) {
+			System.out.println("invalid: key not set, please try again");
+			setKey();
+
+		} else if (finalEcryption == null) {
+			System.out.println("invalid: encryption not set, please try again");
+			encrypt();
+		} else {
+
+			// new instance of cipher and calls the decrypt method
+			Cipher cipher = new Cipher();
+			String finalDecryptionl = cipher.decryptFile(finalEcryption, key);
+			this.finalDecryption = finalDecryptionl;
+			DatabaseIOHandling.writeToFile(finalDecryption, outputDecryption);
+		}
+	}
+
+	private void save() throws Exception {
+		System.out.println("[INFO] You Have Chosen to Save the file: ");
+
+		System.out.println("Please select an already existing .txt file to save: ");
+		Scanner s = new Scanner(System.in);
+		String toSave = s.nextLine();
+		System.out.println("You have chosen to save: " + toSave);
+
+		// Check to see if file directory chosen is valid
+		File directory = new File(toSave);
+		if (!directory.exists()) {
+			System.out.println("Directory does not exist. Please try again");
+		} else if (directory.length() == 0) {
+			System.out.println("Directory does not contain any files.");
+		} else {
+		}
+
+		System.out.println("Please select another file you would like to save " + toSave + " to: ");
+		Scanner s1 = new Scanner(System.in);
+		String savedToFile = s1.nextLine();
+		System.out.println("You have chosen to save: " + toSave + " to " + savedToFile);
+
+		File directory1 = new File(savedToFile);
+		if (!directory1.exists()) {
+			System.out.println("Directory does not exist. Please try again");
+		} else if (directory1.length() == 0) {
+			System.out.println("Directory does not contain any files.");
+		} else {
+		}
+
+		DatabaseIOHandling.save(toSave, savedToFile);
+	}
+
+	private void load() throws Exception {
+		System.out.println("[INFO] You Have Chosen to Load a File: ");
+		System.out.println("Please select an already existing .txt file to load: ");
+
+		// couldn't figure out alternative to s.close the scanner
+		// without shutting down the running of the menu
+		Scanner s = new Scanner(System.in);
+		String loadFileName = s.nextLine();
+		System.out.println("You have chosen to load: " + loadFileName);
+
+		// Check to see if file directory chosen is valid, if so, continue
+		File directory = new File(loadFileName);
+		if (!directory.exists()) {
+			System.out.println("Directory does not exist. Please try again");
+		} else if (directory.length() == 0) {
+			System.out.println("Directory does not contain any files.");
+		} else {
+		}
+
+		DatabaseIOHandling.load(loadFileName);
+	}
+
+	// This prints out the menu
+	public void menuDisplay() throws Exception {
+		System.out.println(ConsoleColour.CYAN_BACKGROUND);
+		System.out.println(ConsoleColour.WHITE_BOLD_BRIGHT);
+		System.out.println("************************************************************");
+		System.out.println("***     ATU - Dept. Computer Science & Applied Physics   ***");
+		System.out.println("***                                                      ***");
+		System.out.println("***                 ADFGVX File Encryption               ***");
+		System.out.println("***                                                      ***");
+		System.out.println("***                  By: Vanessa Tolentino               ***");
+		System.out.println("***                                                      ***");
+		System.out.println("************************************************************");
+		System.out.print(ConsoleColour.YELLOW_BOLD_BRIGHT);
+		System.out.println("  (1) Specify Input File Directory  ");
+		System.out.println("  (2) Specify Output File Directory ");
+		System.out.println("  (3) Set Key		            ");
+		System.out.println("  (4) Encrypt		            ");
+		System.out.println("  (5) Decrypt		            ");
+		System.out.println("  (6) Load		            ");
+		System.out.println("  (7) Save		            ");
+		System.out.println("  (8) Quit		            ");
+
+		// Output a menu of options and solicit text from the user
+		System.out.print(ConsoleColour.BLACK_BOLD);
+		System.out.print("Please Select Options [1-8]>        ");
+
+		System.out.println();
+		System.out.println(ConsoleColour.RESET);
+	}
+}
